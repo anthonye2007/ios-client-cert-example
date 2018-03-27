@@ -8,6 +8,7 @@
 
 import UIKit
 import Alamofire
+import Security
 
 class ViewController: UIViewController {
 
@@ -28,6 +29,19 @@ class ViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
+
+        let cert = PKCS12.init(mainBundleResource: "client", resourceType: "p12", password: "test");
+
+        Manager.delegate.sessionDidReceiveChallenge = { session, challenge in
+            if challenge.protectionSpace.authenticationMethod == NSURLAuthenticationMethodClientCertificate {
+                return (URLSession.AuthChallengeDisposition.useCredential, cert.urlCredential());
+            }
+            if challenge.protectionSpace.authenticationMethod == NSURLAuthenticationMethodServerTrust {
+                return (URLSession.AuthChallengeDisposition.useCredential, URLCredential(trust: challenge.protectionSpace.serverTrust!));
+            }
+            return (URLSession.AuthChallengeDisposition.performDefaultHandling, Optional.none);
+        }
+
         makeSecureRequest()
     }
 
